@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Propostas Comerciais · Concresuper</title>
+<title>Propostas pro vendedor · Concresuper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -22,6 +22,8 @@ body{background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
 .top-actions{display:flex;gap:10px;align-items:center}
 .btn{background:var(--accent);color:#1A1200;border:none;padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
 .btn:hover{background:#FFC72E}
+.info-banner{background:#0D2137;border:1px solid #1A4975;border-radius:10px;padding:12px 18px;margin-bottom:20px;font-size:13px;color:#B8D4F0;display:flex;align-items:center;gap:10px;line-height:1.5}
+.info-banner b{color:#fff}
 .filters{display:flex;gap:12px;flex-wrap:wrap;background:var(--card);padding:15px;border-radius:12px;border:1px solid var(--border);margin-bottom:20px}
 .filter-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
 .filter-group label{font-size:10px;text-transform:uppercase;font-weight:700;color:var(--dim);letter-spacing:.5px}
@@ -67,7 +69,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
 <div class="brand">
 <div class="logo">C</div>
 <div>
-<h1>Propostas Comerciais</h1>
+<h1>Propostas pro vendedor</h1>
 <p>Concresuper · Matriz Operacional</p>
 </div>
 </div>
@@ -79,9 +81,16 @@ body{background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
 </div>
 </div>
 
+<div class="info-banner">
+<span style="font-size:18px">💡</span>
+<span>Use os filtros abaixo para visualizar os dados por <b>Mês</b>, <b>Dia</b>, <b>Filial</b>, <b>Cidade</b> ou <b>Vendedor</b>. Deixe em <b>"Todos"</b> para ver os dados completos.</span>
+</div>
+
 <div class="filters">
 <div class="filter-group"><label>Mês</label><select id="fMes" onchange="aplicarFiltros()"><option value="all">Todos os Meses</option></select></div>
 <div class="filter-group"><label>Dia</label><select id="fDia" onchange="aplicarFiltros()"></select></div>
+<div class="filter-group"><label>Filial</label><select id="fFilial" onchange="aplicarFiltros()"><option value="all">Todas as Filiais</option></select></div>
+<div class="filter-group"><label>Cidade</label><select id="fCidade" onchange="aplicarFiltros()"><option value="all">Todas as Cidades</option></select></div>
 <div class="filter-group"><label>Vendedor</label><select id="fVendedor" onchange="aplicarFiltros()"><option value="all">Todos os Vendedores</option></select></div>
 </div>
 
@@ -176,40 +185,34 @@ function diasUteisRestantes() {
 }
 
 function processar(registros) {
-  // Encontra a linha de datas (onde col A = "Data" ou "data")
   var linhaDatas = -1;
   for (var i = 0; i < registros.length; i++) {
     var valA = String(registros[i][0] || '').toLowerCase().trim();
     if (valA === 'data') { linhaDatas = i; break; }
   }
   if (linhaDatas === -1) {
-    document.getElementById('erroTexto').innerHTML = 'Linha com as datas não encontrada. A planilha precisa ter uma linha com "Data" na coluna A e as datas nas colunas seguintes.';
+    document.getElementById('erroTexto').innerHTML = 'Linha com as datas não encontrada.';
     document.getElementById('erroMsg').style.display = 'block';
     return;
   }
 
-  // Extrai as datas de cada coluna
   var datas = [];
   var rowDatas = registros[linhaDatas];
   for (var c = 1; c < rowDatas.length; c++) {
     var dt = parseData(rowDatas[c]);
-    if (dt) {
-      datas.push({ col: c, data: dt });
-    }
+    if (dt) datas.push({ col: c, data: dt });
   }
   if (datas.length === 0) {
-    document.getElementById('erroTexto').innerHTML = 'Nenhuma data válida encontrada na linha "Data". Verifique o formato das datas.';
+    document.getElementById('erroTexto').innerHTML = 'Nenhuma data válida encontrada.';
     document.getElementById('erroMsg').style.display = 'block';
     return;
   }
 
-  // Lê os vendedores (linhas abaixo da linha de datas)
   dados = [];
   for (var i = linhaDatas + 1; i < registros.length; i++) {
     var row = registros[i];
     var nome = String(row[0] || '').trim();
     if (!nome || nome.match(/^(vendedor|total|meta|)$/i)) continue;
-    
     for (var d = 0; d < datas.length; d++) {
       var col = datas[d].col;
       var dt = datas[d].data;
@@ -227,7 +230,7 @@ function processar(registros) {
   }
 
   if (dados.length === 0) {
-    document.getElementById('erroTexto').innerHTML = 'Nenhuma proposta encontrada. Preencha a planilha com o número de propostas de cada vendedor por dia.';
+    document.getElementById('erroTexto').innerHTML = 'Nenhuma proposta encontrada.';
     document.getElementById('erroMsg').style.display = 'block';
     return;
   }
@@ -236,7 +239,7 @@ function processar(registros) {
   document.getElementById('ultAtualizacao').textContent = new Date().toLocaleString('pt-BR');
   preencherFiltros();
   aplicarFiltros();
-  toast(dados.length + ' registros de propostas carregados');
+  toast(dados.length + ' registros carregados');
 }
 
 async function carregarDados() {
@@ -259,8 +262,7 @@ async function carregarDados() {
     var dadosBrutos = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
     processar(dadosBrutos);
   } catch(e) {
-    console.error(e);
-    document.getElementById('erroTexto').innerHTML = e.message + '<br><br><b>Instruções:</b><br>1. Baixe a planilha como .xlsx<br>2. Renomeie para <b>propostas.xlsx</b><br>3. Faça upload na mesma pasta do index.html';
+    document.getElementById('erroTexto').innerHTML = e.message;
     document.getElementById('erroMsg').style.display = 'block';
     toast('Erro ao carregar');
   }
@@ -268,7 +270,6 @@ async function carregarDados() {
 
 function preencherFiltros() {
   var uniq = function(arr) { var o = {}; arr.forEach(function(v) { if (v && v !== 'N/A') o[v] = 1; }); return Object.keys(o).sort(function(a,b) { return a.localeCompare(b, 'pt-BR'); }); };
-  
   var setar = function(id, vals, temAll) {
     var el = document.getElementById(id);
     el.innerHTML = '';
@@ -276,7 +277,9 @@ function preencherFiltros() {
     vals.forEach(function(v) { var o = document.createElement('option'); o.value = v; o.textContent = v; el.appendChild(o); });
   };
   setar('fMes', uniq(dados.map(function(r){return r.mes;})));
-  setar('fDia', uniq(dados.map(function(r){return r.dia;})));
+  setar('fDia', uniq(dados.map(function(r){return r.dia;})), false);
+  setar('fFilial', uniq(dados.map(function(r){return r.filial;})));
+  setar('fCidade', uniq(dados.map(function(r){return r.cidade;})));
   setar('fVendedor', uniq(dados.map(function(r){return r.vendedor;})));
 }
 
@@ -284,15 +287,17 @@ function aplicarFiltros() {
   var f = {
     mes: document.getElementById('fMes').value,
     dia: document.getElementById('fDia').value,
+    filial: document.getElementById('fFilial').value,
+    cidade: document.getElementById('fCidade').value,
     vendedor: document.getElementById('fVendedor').value
   };
-  
   filtrados = dados.filter(function(r) {
     return (f.mes === 'all' || r.mes === f.mes) && 
-           (f.dia === 'all' || r.dia === f.dia) && 
+           (r.dia === f.dia) && 
+           (f.filial === 'all' || r.filial === f.filial) && 
+           (f.cidade === 'all' || r.cidade === f.cidade) && 
            (f.vendedor === 'all' || r.vendedor === f.vendedor);
   });
-  
   renderizar(f);
 }
 
@@ -311,7 +316,7 @@ function renderizar(f) {
   filtrados.forEach(function(r){ diasUnicos[r.dia] = (diasUnicos[r.dia]||0) + r.propostas; });
   var qtdDias = Object.keys(diasUnicos).length;
   
-  document.getElementById('kpiTotal').textContent = fmt(total) + ' prop.';
+  document.getElementById('kpiTotal').textContent = fmt(total);
   document.getElementById('kpiMedia').textContent = fmt1(total / qtdVends);
   document.getElementById('kpiDia').textContent = fmt1(total / qtdDias);
   document.getElementById('kpiTop').textContent = vendsArray.length ? vendsArray[0].nome + ' (' + fmt(vendsArray[0].total) + ')' : '—';
@@ -324,17 +329,36 @@ function renderizar(f) {
 
 function destruir(k) { if (graf[k]) { try { graf[k].destroy(); } catch(e) {} delete graf[k]; } }
 
+var pluginLabels = {
+  id: 'valorLabels',
+  afterDatasetsDraw: function(chart) {
+    var ctx = chart.ctx;
+    chart.data.datasets.forEach(function(dataset, i) {
+      var meta = chart.getDatasetMeta(i);
+      if (!meta.hidden) {
+        meta.data.forEach(function(bar, index) {
+          var valor = dataset.data[index];
+          if (valor === 0) return;
+          ctx.fillStyle = '#F5B400';
+          ctx.font = 'bold 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(valor, bar.x, bar.y - 8);
+        });
+      }
+    });
+  }
+};
+Chart.register(pluginLabels);
+
 function renderizarGraficos(vends) {
   Chart.defaults.color = '#8CA0B3'; Chart.defaults.font.family = 'Inter';
   var grid = { color: 'rgba(255,255,255,.05)' };
   var nomes = vends.map(function(v){return v.nome;});
   var totais = vends.map(function(v){return v.total;});
   
-  // Ranking
   destruir('rank');
-  graf.rank = new Chart(document.getElementById('chartRank'), { type:'bar', data:{labels:nomes, datasets:[{data:totais, backgroundColor:'#F5B400', borderRadius:5}]}, options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:grid, title:{display:true, text:'Propostas', color:'#8CA0B3'}}, y:{grid:{display:false}}}} });
+  graf.rank = new Chart(document.getElementById('chartRank'), { type:'bar', data:{labels:nomes, datasets:[{data:totais, backgroundColor:'#F5B400', borderRadius:5}]}, options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:grid, beginAtZero:true}, y:{grid:{display:false}}}} });
 
-  // Evolução Diária
   destruir('evo');
   var evo = {};
   filtrados.forEach(function(r){var k=r.dia; if (k !== 'N/A') evo[k] = (evo[k]||0) + r.propostas; });
@@ -347,14 +371,12 @@ function renderizarGraficos(vends) {
     graf.evo = new Chart(document.getElementById('chartEvo'), { type:'line', data:{labels:labs, datasets:[{data:labs.map(function(l){return evo[l];}), borderColor:'#F5B400', backgroundColor:'rgba(245,180,0,.1)', fill:true, tension:.35, pointRadius:4, pointBackgroundColor:'#F5B400'}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{grid:grid, beginAtZero:true}}}});
   }
 
-  // Distribuição (doughnut)
   destruir('part');
   var paleta = ['#F5B400','#4C8DFF','#2ECC71','#FF6B6B','#B084F5','#4FD1C5','#F783AC','#F0A868','#63C7FF','#E4C441','#95A5A6'];
   graf.part = new Chart(document.getElementById('chartPart'), { type:'doughnut', data:{labels:nomes, datasets:[{data:totais, backgroundColor:nomes.map(function(v,i){return paleta[i%paleta.length];}), borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{legend:{position:'bottom', labels:{color:'#fff', boxWidth:10, usePointStyle:true, padding:10}}}} });
 
-  // Comparativo (barras verticais)
   destruir('comp');
-  graf.comp = new Chart(document.getElementById('chartComp'), { type:'bar', data:{labels:nomes, datasets:[{label:'Propostas Realizadas', data:totais, backgroundColor:totais.map(function(v,i){var m=Math.max.apply(null,totais); return v===m?'#2ECC71':'#4C8DFF';}), borderRadius:5}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{grid:grid, beginAtZero:true}}}});
+  graf.comp = new Chart(document.getElementById('chartComp'), { type:'bar', data:{labels:nomes, datasets:[{label:'Propostas', data:totais, backgroundColor:totais.map(function(v,i){var m=Math.max.apply(null,totais); return v===m?'#2ECC71':'#4C8DFF';}), borderRadius:5}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{grid:grid, beginAtZero:true}}}});
 }
 
 function renderizarProgresso(vends) {
@@ -363,7 +385,7 @@ function renderizarProgresso(vends) {
   vends.slice().sort(function(a,b){return b.total - a.total;}).forEach(function(v){
     var pct = Math.round(v.total / maxTotal * 100);
     var cor = pct >= 80 ? 'green' : (pct >= 50 ? 'yellow' : (pct >= 25 ? 'orange' : 'red'));
-    el.innerHTML += '<div class="prog-card"><div class="prog-head"><span>'+v.nome+'</span><span style="color:var(--accent)">'+fmt(v.total)+' prop.</span></div><div class="bar-bg"><div class="bar-fill '+cor+'" style="width:'+pct+'%"></div></div><div class="prog-det"><span>📊 '+pct+'% do líder</span><span>📅 '+fmt1(v.total/(vends.length||1))+' média</span></div></div>';
+    el.innerHTML += '<div class="prog-card"><div class="prog-head"><span>'+v.nome+'</span><span style="color:var(--accent)">'+fmt(v.total)+'</span></div><div class="bar-bg"><div class="bar-fill '+cor+'" style="width:'+pct+'%"></div></div><div class="prog-det"><span>📊 '+pct+'% do líder</span><span>📅 '+fmt1(v.total/(vends.length||1))+' média/dia</span></div></div>';
   });
 }
 
